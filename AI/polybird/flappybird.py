@@ -186,7 +186,7 @@ def maxExploreFunction(state):
         return val2
 
 def exploreFunction(u,n):
-    return u + k/n
+    return u + int(k)/n
 
 def createSuperArray(x_size, y_size, momentem_size):
     count = 0
@@ -543,7 +543,7 @@ def main():
             birdsDone = []
             birdsStates = [[0 for x in range(2)] for x in range(100)]              
             for x in range(0,1):
-                bird = Bird(50, random.randrange(0,WIN_HEIGHT), 2, (images['bird-wingup'], images['bird-wingdown']))
+                bird = Bird(50, WIN_HEIGHT/2 , 2, (images['bird-wingup'], images['bird-wingdown']))
                 birds.append(bird)
                 birdsDone.append(False)
 
@@ -645,7 +645,13 @@ def main():
                 for x in range(0,len(birds)):
                     if(birdsDone[x] == False):
                         bird = birds[x]
+                        currX = pipes[-1].x - bird.x + 100
+                        currY = ( WIN_HEIGHT - (pipes[-1].bottom_pieces + 1 ) * 32 ) - bird.y - 60
+                        currP = bird.msec_to_climb
+                        currState = dSpaceArray[tX(currX)][tY(currY)][tP(currP)]
+                        oldState = birdsStates[index][1]
                         bird.update()
+                        print("updated")
                         display_surface.blit(bird.image, bird.rect)
 
                 # update and display score

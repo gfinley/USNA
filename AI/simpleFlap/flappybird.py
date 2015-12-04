@@ -12,6 +12,7 @@ from pygame.locals import *
 import pickle
 import datetime
 import time
+import sys
 import math
 
 class dSpace:
@@ -186,7 +187,7 @@ def maxExploreFunction(state):
         return val2
 
 def exploreFunction(u,n):
-    return u + k/n
+    return u + int(k)/n
 
 def createSuperArray(x_size, y_size, momentem_size):
     count = 0
@@ -525,7 +526,7 @@ def main():
             #print(rewardMap)
             display_surface = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
             pygame.display.set_caption('Pygame Flappy Bird')
-            
+            oldState = dSpaceArray[0][0][0]
 
 
             clock = pygame.time.Clock()
@@ -638,13 +639,14 @@ def main():
 
 
                 """updating the Q function here"""
+
                 if oldState.x != currState.x or oldState.y != currState.y or oldState.p != currState.p:
                     updateQ(oldState, climbing ,currState)
                     nextMove = getNextAction(currState)
                     #print("stateChange")
                     #print(oldState.x,oldState.y,oldState.p)
                     #print(currState.x,currState.y,currState.p)
-                    if nextMove == 1 and bird.msec_to_climb <  5:
+                    if nextMove == 1 and bird.msec_to_climb <  100:
                         bird.msec_to_climb = Bird.CLIMB_DURATION
                         nextMove = 0
                     stateX = tX(currX)
@@ -692,10 +694,10 @@ def main():
         pickle.dump( dSpaceArray, open( save, "wb" ) )
         pickle.dump( visitedMap, open( vmapName, "wb" ) )
         pickle.dump( rewardMap, open( rmapName, "wb" ) )
-    except (RuntimeError, TypeError, NameError) as e:
-        print(e)
-        pass
-
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
 
 if __name__ == '__main__':
     # If this module had been imported, __name__ would be 'flappybird'.
