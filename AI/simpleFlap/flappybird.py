@@ -43,9 +43,9 @@ gamma = .8
 pp = True
 randomV = input("please enter Randomness Value: ")
 k = input("please enter Exploration Value: ")
-vmapName = "vMapR" + str(randomV)
-rmapName = "rewardMapR" + str(randomV)
-save = "saveR" + str(randomV)
+vmapName = "vMapRK" + str(randomV)
+rmapName = "rewardMapRK" + str(randomV)
+save = "saveR" + str(randomV) + "K" + str(k)
 #global fail
 #global success 
 #oldPercent = 0
@@ -54,14 +54,15 @@ try:
     visitedMap = pickle.load( open( vmapName, "rb" ) )
 except:
         visitedMap = {}
-
+ 
 try:
     rewardMap  = pickle.load( open( rmapName, "rb" ) )
 except:
         rewardMap = {}
 momentem_size = 333.3
-x_size = 32
-y_size = 32
+x_size = 8
+y_size = 8
+print(WIN_WIDTH/ x_size)
 try:
     dSpaceArray = pickle.load( open( save, "rb" ) )
 except:
@@ -166,6 +167,7 @@ def updateQ(state,  action, state2):
     temp = (1-alpha) * getQ(state,action) + alpha * getSample(state,action,state2)
     #print((1-alpha),getQ(state,action), alpha, getSample(state,action,state2))
     if temp != 0:
+        print(temp)
         changeQ(temp,state,action)
 
 def maxExploreFunction(state):
@@ -216,16 +218,13 @@ def catchScore(state,action,state2):
     #counter = counter + 1
 
 def tX(x):
-    temp = int(x/32)
-    if temp > 16:
-        return 16
-    if temp < 0:
-        return 0;
+    temp = int(x/ x_size)
+    print(temp)
     return temp
 def tY(y):
-    return 15 + int(y/32)
+    return int(y/y_size)
 def tP(p):
-    return int(p/(33.4))
+    return int(p/33.4)
 
 class Bird(pygame.sprite.Sprite):
     """Represents the bird controlled by the player.
@@ -568,7 +567,7 @@ def main():
                 print(e)
                 pass
             """
-            while  not done:
+            while not done:
                 clock.tick(FPS)
                 # Handle this 'manually'.  If we used pygame.time.set_timer(),
                 # pipe addition would be messed up when paused.
@@ -590,7 +589,7 @@ def main():
                     paused = not paused  # don't draw anything
 
                 """my vars"""
-                currX = pipes[-1].x - bird.x + 100
+                currX = pipes[-1].x - bird.x 
                 currY = ( WIN_HEIGHT - (pipes[-1].bottom_pieces + 1 ) * 32 ) - bird.y - 60
                 currP = bird.msec_to_climb
                 currState = dSpaceArray[tX(currX)][tY(currY)][tP(currP)]
@@ -645,7 +644,7 @@ def main():
                     #print("stateChange")
                     #print(oldState.x,oldState.y,oldState.p)
                     #print(currState.x,currState.y,currState.p)
-                    if nextMove == 1 and bird.msec_to_climb <  150:
+                    if nextMove == 1 and bird.msec_to_climb <  5:
                         bird.msec_to_climb = Bird.CLIMB_DURATION
                         nextMove = 0
                     stateX = tX(currX)
@@ -658,21 +657,19 @@ def main():
                 score_surface = score_font.render(str(score), True, (255, 255, 255))
                 score_x = WIN_WIDTH/2 - score_surface.get_width()/2
                 display_surface.blit(score_surface, (score_x, PipePair.PIECE_HEIGHT))
-                """
+                
                 #display distance on game board
-                distance = pipes[-1].x - bird.x + 100
+                distance = pipes[-1].x - bird.x
                 distance_surface = score_font.render(str(distance), True, (255, 255, 255))
                 score_x = WIN_WIDTH/2 - score_surface.get_width()/2
                 display_surface.blit(distance_surface, (score_x, PipePair.PIECE_HEIGHT-20))
-
+                
                 #y_distance = bird.y - ( WIN_HEIGHT - pipes[-1].bottom_height_px)
-                y_distance_to_middle =  ( WIN_HEIGHT - (pipes[-1].bottom_pieces + 1 ) * 32 ) - bird.y - 60
-                distance_surface = score_font.render(str(y_distance_to_middle), True, (255, 255, 255))
+                #y_distance_to_middle =  ( WIN_HEIGHT - (pipes[-1].bottom_pieces + 1 ) * 32 ) - bird.y - 60
+                distance_surface = score_font.render(str(currState.y), True, (255, 255, 255))
                 score_x = WIN_WIDTH/2 - score_surface.get_width()/2
                 display_surface.blit(distance_surface, (score_x, PipePair.PIECE_HEIGHT+30))
 
-
-    """
                 timeToClimb =  bird.msec_to_climb 
                 distance_surface = score_font.render(str( timeToClimb), True, (255, 255, 255))
                 score_x = WIN_WIDTH/2 - score_surface.get_width()/2
