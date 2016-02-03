@@ -11,8 +11,6 @@ double pointCalc(){
 	double distance = x*x + y*y; 
 	return distance;
 }
-
-
 int main(int argc, char *argv[] )
 {
 	int rank;
@@ -58,38 +56,10 @@ int main(int argc, char *argv[] )
 			if(distance <= 1){
 				count++;
 			}
-
 		}
 		//printf("node: %d saw a count of %d\n", rank, count);
 		MPI_Send(&count, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 		//printf("%f from Mr. %d I saw the number %d \n", r, rank, number);
 	}
-
-
-	//start seeding random number
-
-	//end seeding random number
-
-	//first for loop
-	int xx; //declare loop controlling var
-
   MPI_Finalize();
-
 }
-/*
-seed the random number generator
-for ranks not 0 do this:
- receive the number of iterations from rank 0
- for the number of iterations specified
- pick 2 random numbers between 0 and 1 as an (x,y) point
- does that point lie within the unit circle?
- if so, count it
- report the count back to rank 0
-otherwise, for rank 0
- read a number of iterations from the user (exit on EOF)
- send a message to all (non-0) ranks telling the iterations
- receive a message from each rank
- sum the two counts
- compute the approximation for pi
- display it
- */
