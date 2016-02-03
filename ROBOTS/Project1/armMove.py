@@ -40,11 +40,13 @@ angles = [128,158,45,100,190] #SAME AS PICTURE
 
 #angles2 = [0,-.3665,1.029744,.34906,-.76794]
 angles2 = [0,0,0,-np.pi/4,0]
-print(numConvert(angles[0]))
-print(numConvert(angles[1]))
-print(numConvert(angles[2]))
-print(numConvert(angles[3]))
-print(numConvert(angles[4]))
+print(angles2)
+angles2[0] = input("Angle for servo 1 ")
+angles2[1] = input("Angle for servo 2 ")
+angles2[2] = input("Angle for servo 3 ")
+angles2[3] = input("Angle for servo 4 ")
+angles2[4] = input("Angle for servo 5 ")
+print(angles2)
 
 #1
 position = Amatrix(10,0,0,angles2[0])
@@ -59,7 +61,7 @@ position = np.dot(position , Amatrix(4,0, 0, angles2[2]))
 print(position)
 print()
 #4
-position = np.dot(position , Amatrix(0,0, -np.pi/2, angles2[3] - np.pi/2 ))
+position = np.dot(position , Amatrix(0,0, -np.pi/2, angles2[3] ))
 print(position)
 print()
 #5
@@ -78,6 +80,7 @@ print(angle2)
 print(angle3)
 print(angle4)
 print(angle5)
+
 
 
 ser = serial.Serial("/dev/ttyUSB0") #Connects to the USB port
