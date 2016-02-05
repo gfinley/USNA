@@ -67,14 +67,35 @@ print()
 #5
 position = np.dot(position , Amatrix(0,7.5, 0, angles2[4] ))
 print(position)
-
+ser = serial.Serial("/dev/ttyUSB0")
 
 angle1 =  127 - radiansToTicks(angles2[0]) 
-angle2 =  127 - radiansToTicks(angles2[1])
-angle3 =  127 - radiansToTicks(angles2[2])
-angle4 =  127 + radiansToTicks(angles2[3])
-angle5 =  127 - radiansToTicks(angles2[4])
+if angle1 <= 0:
+	angle1 = 1
 
+command1 = "SV1 M" + str(angle1) + "\r"
+ser.write(command1) 
+
+
+angle2 =  127 - radiansToTicks(angles2[1])
+command2 = "SV2 M" + str(angle2) + "\r"
+ser.write(command2)
+
+angle3 =  127 - radiansToTicks(angles2[2])
+command3 = "SV3 M" + str(angle3) + "\r"
+ser.write(command3)
+
+
+angle4 =  255 + radiansToTicks(angles2[3])
+if angle4 == 0:
+	angle4 = 1;
+command4 = "SV4 M" +  str(angle4) + "\r"
+ser.write(command4)
+
+
+angle5 =  127 - radiansToTicks(angles2[4])
+command5 = "SV5 M" + str(angle5) + "\r"
+ser.write(command5)
 print(angle1)
 print(angle2)
 print(angle3)
@@ -83,18 +104,25 @@ print(angle5)
 
 
 
-ser = serial.Serial("/dev/ttyUSB0") #Connects to the USB port
-command1 = "SV1 M" + str(angle1) + "\r"
-command2 = "SV2 M" + str(angle2) + "\r"
-command3 = "SV3 M" + str(angle3) + "\r"
-command4 = "SV4 M" +  str(angle4) + "\r"
-command5 = "SV5 M" + str(angle5) + "\r"
+ #Connects to the USB port
+beta = np.arcsin(-position[2][0])
+phi = np.arcsin(position[2][1]/np.cos(beta))
+otherPhi = np.arcsin(position[2][0]/np.cos(beta))
 
-ser.write(command1) #First command "wakes up" the controller board
-ser.write(command2)
-ser.write(command3)
-ser.write(command4)
-ser.write(command5)
+print("yaw: " + str(otherPhi))
+print("pitch: " + str(beta))
+print("roll: " + str(phi))
+
+
+
+
+
+
+#First command "wakes up" the controller board
+
+
+
+
 
 #more ser.write commands here
 #ser.write('SV1 M255\r')# (but with no angle brackets).
