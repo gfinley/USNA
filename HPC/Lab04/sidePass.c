@@ -9,7 +9,12 @@ int main(int argc, char *argv[] ){
 	int rank;
 	int numprocs;
 	int number;
-
+	int xx;
+	for(xx = 0; xx < 10; xx++){
+		int test = (int)((double)rand()/ RAND_MAX ) % numprocs;
+		printf("%d\n", test);
+	}
+	
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD,&numprocs);
@@ -21,7 +26,8 @@ int main(int argc, char *argv[] ){
 		MPI_Send(&numbertosend, 1, MPI_INT, 3, 0, MPI_COMM_WORLD);
 	}
 
-	while(1){
+	/*while(1){
+		int numbertosend;
 		MPI_Recv(&number, 1, MPI_INT, MPI_ANY_SOURCE , MPI_ANY_TAG , MPI_COMM_WORLD, &stat);
 		printf(" I have recieved a message from rank %d Passing now", stat.MPI_SOURCE);
 		if(stat.MPI_SOURCE > rank){
@@ -36,7 +42,7 @@ int main(int argc, char *argv[] ){
 		
 
 	}
-
+*/
 
 
 	}

@@ -2,49 +2,53 @@
 import sys, os
 import traceback
 import Image
+import sys
 
-def getIndex(num, arr):
+
+def getIndex(number, arr):
 	for x in range(0,len(arr)):
-		if int(num) <= arr[x][0]:
+		if number <= arr[x]:
 			return x
-		if num < arr[x][0]:
+		if number < arr[x]:
 			return x
+	return 0
 		#print("nothing was found")
 		#print(str(arr[0][0]) + "is checked against" + num)
+def getColor(divisions, index):
+	rang = (255 + 255 )/ divisions
+	val1 = rang*index
+	if index == 31:
+		return (0,255,0)
+	if (255 - val1) < 0:
+		return (0, 0,val1)
+	return (255 - val1, 0 ,val1)
+
 try:
 	img = Image.new( 'RGB', (500,500), "black") # create a 300x300 image 
 	pixels = img.load() 
-	cmapFile = open('cMap.data')
+	cmapFile = open(sys.argv[1])
 	cMap = cmapFile.read()
-	cMap = cMap.split("\n")
-	for x in range(0,len(cMap)):
-		cMap[x] = cMap[x].split(" ")
-		cMap[x] = map(int,cMap[x])
-	print(cMap)
+	cMap = cMap.split()
+	cMap = map(int,cMap)
 	#print(cMap)
 
 
-	f = open('Lab3Mystery.data')
+	f = open(sys.argv[2])
 	text = f.read()
 	inputNumbers = text.replace("\n", ", ")
 	inputNumbers = inputNumbers.split(',')
 	inputNumbers.pop()
 	print(len(inputNumbers))
-	try:
-		result = map(int, inputNumbers)
-	except:
-		pass
-	temp = 0
-	temp = 0
-	#print(cMap)
+	result = map(int, inputNumbers)
+	tempNum = 0
+	index = 0
 	for x in range(0,500):
 		for y in range(0,500):
-			#print(temp)
-			index = getIndex(inputNumbers[temp], cMap)
-			#print(inputNumbers[temp])
-			#print(index)
-			pixels[x,y] = (cMap[index][1], cMap[index][2], cMap[index][3]) # set a made-up color (R, G, B)
-			temp = temp + 1
+			z = result[tempNum]
+			index = getIndex(z, cMap)
+			temp = getColor(len(cMap), index)
+			pixels[x,y] = temp# set a made-up color (R, G, B)
+			tempNum = tempNum + 1
 	'''for x in range(1,1001):
 		if result.count(x) != 0:
 			if result.count(x) > 1000 or temp > 1000:
