@@ -159,17 +159,18 @@ int main(int argc, char *argv[] )
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 	MPI_Comm_size(MPI_COMM_WORLD,&numprocs);
-
+	int x;
+	int y;
 
 	if( rank ==0){
-		printf("NODE: %d awake\n", rank);
+		//printf("NODE: %d awake\n", rank);
 		//read in from file
 		int i;
 		int input1, input2;
 		scanf("%d", &input1);
 		scanf("%d", &input2);
-		int x = input1;
-		int y = input2;
+		x = input1;
+		y = input2;
 		sendBoardSize(numprocs,x,y);
 		xsize = x/numprocs + 2;
 		ysize = y + 2;
@@ -199,8 +200,6 @@ int main(int argc, char *argv[] )
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 		//printf("The y size here is %d\n", ysize);
-		printBoard(xsize,ysize,board[0]);
-
 	}
 	else{
 		
@@ -225,67 +224,122 @@ int main(int argc, char *argv[] )
 	//lets create a test halo exchange
 
 	//a loop will go around this for every generation
-
-
+		char leftArray[ysize] , rightArray[ysize];
+		int yy; 
+		char leftArrayRecive[ysize],rightArrayRecive[ysize];
+		int i,k,z,tempNum;
 		//start the halo exchange
 		//get the part of the board we are planing on exchanging
 		//start with switching the top anb bottoms because that doesn't require comms between nodes
-		if(rank ==0){
-			syncBoardTopBottom(board[0],xsize, ysize);
-			int yy; //loop controller
-			char leftArray[ysize];
-			for(yy = 0; yy < ysize;yy++){ //left to right
-				leftArray[yy] = board[currboardNumber][yy][1];
-				printf("%c",board[currboardNumber][yy][1]);
+		for(i =0; i < numGens; i++){
+			if(rank ==0){
+				syncBoardTopBottom(board[currboardNumber],xsize, ysize); //snyc the top and bottom of board before the edges
+				for(yy = 0; yy < ysize;yy++){ //left to right
+					leftArray[yy] = board[currboardNumber][yy][1];
+				}
+				MPI_Send(&leftArray, ysize, MPI_CHAR, numprocs-1, 1, MPI_COMM_WORLD);
+				MPI_Recv(&leftArrayRecive, sizeof(leftArrayRecive), MPI_CHAR, MPI_ANY_SOURCE , MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+				readInHaloSide(board[currboardNumber], leftArrayRecive,1,xsize,ysize);
+				//////////////////at this point the circle should have gone around and every node should have shared its left side
+				////////////////// time to start sharing the right node
+				for(yy = 0; yy < ysize;yy++){ //left to right
+					rightArray[yy] = board[currboardNumber][yy][xsize-2]; //creating the array
+				}
+				MPI_Send(&rightArray, ysize, MPI_CHAR, 1, 1, MPI_COMM_WORLD);
+				MPI_Recv(&rightArrayRecive, sizeof(rightArrayRecive), MPI_CHAR, MPI_ANY_SOURCE , MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+				//printf("Node: %d, Recived From %d \n", rank, stat.MPI_SOURCE );
+				readInHaloSide(board[currboardNumber], rightArrayRecive,0,xsize,ysize);
 			}
-			MPI_Send(&leftArray, ysize, MPI_CHAR, numprocs-1, 1, MPI_COMM_WORLD);
+			else{
+				
+				MPI_Recv(&leftArrayRecive, sizeof(leftArrayRecive), MPI_CHAR, MPI_ANY_SOURCE , MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+				syncBoardTopBottom(board[currboardNumber],xsize, ysize);
+				//printf("Node: %d, Recived From %d \n", rank, stat.MPI_SOURCE );
+				readInHaloSide(board[currboardNumber], leftArrayRecive,1,xsize,ysize);
+				for(yy = 0; yy < ysize;yy++){ //left to right
+					leftArray[yy] = board[currboardNumber][yy][1];
+				}
+				MPI_Send(&leftArray, ysize, MPI_CHAR, rank-1, 1, MPI_COMM_WORLD);
+				//////////////////at this point the circle should have gone around and every node should have shared its left side
+				////////////////// time to start sharing the right node
+				MPI_Recv(&rightArrayRecive, sizeof(rightArrayRecive), MPI_CHAR, MPI_ANY_SOURCE , MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+				readInHaloSide(board[currboardNumber], rightArrayRecive,0,xsize,ysize);
+				for(yy = 0; yy < ysize;yy++){ //left to right
+					rightArray[yy] = board[currboardNumber][yy][xsize-2];
+				}
+				MPI_Send(&leftArray, ysize, MPI_CHAR, (rank+1) % numprocs, 1, MPI_COMM_WORLD);
+			}
+
+			//at this point the boards should all by synced up and ready to do the life action
+			MPI_Barrier(MPI_COMM_WORLD);
+			for(k = 1; k < ysize-1;k++){//loops through range of y
+				for(z=1; z<xsize-1;z++){//loops through range of x's for each row visited
+					tempNum = countNighboors(k,z,board[currboardNumber]);
+					lifeAction(tempNum,k,z,board[currboardNumber],board[nextBoardNumber]);
+			}
+			}
+
+			currboardNumber = switchBoard(currboardNumber);
+			nextBoardNumber = switchBoard(nextBoardNumber);
+			resetBoard(xsize,ysize,board[nextBoardNumber]);
+		}//end of loop for generation, starts over untill generational limit has been reached
+		MPI_Barrier(MPI_COMM_WORLD);
+		//now we start the consolodation process of this lab
+		//the master will be placed in a state of recept, receicing the coodinates of life culturs inside the slave nodes
+		//The master will exit this state after receiving numProcs -1 completion codes which are messages with a tag of 0
+
+
+		if(rank ==0){
+			//init new board to store alll the things in 
+			//printf("creating final board\n");
+			char** finalBoard;
+			int lifeLocation[2];
+			finalBoard = calloc((size_t)y+2, sizeof(char *));
+			for (i=0; i < y+2; i++) {
+				finalBoard[i] = calloc((size_t)x+2, sizeof(char));
+			}
+
+			resetBoard(x+2,y+2, finalBoard);
+			int i,j,k;
+			//printf("copying life from master  0 board into new board\n");
+			for(i =1; i < ysize-1; i++){
+				for(j=1;j < xsize-1; j++){
+					if(board[currboardNumber][i][j] == '@'){
+						fillBoard(i, j, finalBoard);
+					}
+				}
+			}
+			//printf("made it to start of board print\n");
+			//printf("made it to end of board print\n");
+			int endCount = 0;
+			while( endCount != (numprocs - 1)){
+				MPI_Recv(&lifeLocation, 2, MPI_INT, MPI_ANY_SOURCE , MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+				if(stat.MPI_TAG == 0){
+					endCount++;
+					//printf("saw end count\n");
+				}
+				else{
+					//printf("adding in X; %d, Y: %d \n",lifeLocation[0],lifeLocation[1]);
+					fillBoard(lifeLocation[0], lifeLocation[1],finalBoard);
+				}
+			}
+			printBoard(x+2,y+2,finalBoard);
 		}
 		else{
-			char leftArrayRecive[ysize];
-			MPI_Recv(&leftArrayRecive, sizeof(leftArrayRecive), MPI_CHAR, MPI_ANY_SOURCE , MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
-			printf("Node: %d, Recived From %d \n", rank, stat.MPI_SOURCE );
-			readInHaloSide(board[currboardNumber], leftArrayRecive,1,xsize,ysize);
-			int ii;
-			for( ii = 0; ii< ysize; ii++){
-				printf("%c", leftArrayRecive[ii]);
+			int xx, yy;
+			int lifeLocation[2];
+			for(yy=1;yy< ysize-1; yy++){
+				for(xx=1;xx< xsize-1;xx++){
+					if(board[currboardNumber][yy][xx] == '@'){
+						lifeLocation[0] = xx;
+						lifeLocation[1] = yy;
+						MPI_Send(&lifeLocation, 2, MPI_INT, 0, 1, MPI_COMM_WORLD);
+					}
+				}
 			}
-			//MPI_Recv(&leftArrayRecive, ysize, MPI_CHAR, MPI_ANY_SOURCE , MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+			MPI_Send(&lifeLocation, 2, MPI_INT, 0, 0, MPI_COMM_WORLD);
 		}
-		MPI_Barrier(MPI_COMM_WORLD);
-		
-
-		currboardNumber = switchBoard(currboardNumber);
-		nextBoardNumber = switchBoard(nextBoardNumber);
-		resetBoard(xsize,ysize,board[nextBoardNumber]);
-		printf("thats it\n");
-		
-/*
-	//printf("point 2\n");
-	syncBoard(board[0],xsize, ysize);
-	//printf("point 4\n");
-	resetBoard(xsize,ysize,board[1]);
-	//printf("point 5\n");
-
-	printf("there will be %d Generations\n", numGens);
-	printBoard(xsize,ysize,board[0]);
-	for(i =0; i < numGens; i++){//input1 is number of generations will run for this long
-		//in each generation the life will be ticked
-		for(k = 1; k < xsize-1;k++){//loops through range of y
-			for(z=1; z<ysize-1;z++){//loops through range of x's for each row visited
-				tempNum = countNighboors(k,z,board[currboardNumber]);
-				syncBoard(board[currboardNumber],xsize,ysize);//does the row magic
-				lifeAction(tempNum,k,z,board[currboardNumber],board[nextBoardNumber]);
-			}
-		}
-		currboardNumber = switchBoard(currboardNumber);
-		nextBoardNumber = switchBoard(nextBoardNumber);
-		resetBoard(xsize,ysize,board[nextBoardNumber]);
-		if(i % printInterval == 0){
-			printBoard(xsize,ysize,board[currboardNumber]);
-		}
-	}
-	
-*/
+		//end of relavent coding block
 	  MPI_Finalize();
   return 0;
 }

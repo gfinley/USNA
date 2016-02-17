@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <time.h>
-#include <mpi.h>
+#include "mpi.h"
 #include <math.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -52,39 +52,38 @@ int main(int argc, char *argv[] ){
 	while(1){
 		MPI_Recv(&number, 1, MPI_INT, MPI_ANY_SOURCE , MPI_ANY_TAG , MPI_COMM_WORLD, &stat);
 		direction = number;
-		number = direction;
 		if(rank == stat.MPI_TAG){
 			printf("%d: Recvd msg from %d; it is a message for me!!\n",rank,stat.MPI_SOURCE);
 			sendRandomMessage(rank, numprocs);
 		}
 		else{
 			if( direction ==1){
+				char dirStr[] = "Clockwise";
 				if((rank + 1) == numprocs){
 					nextNode = 0;
 					printf("%d: Recvd msg from %d; sending %s to Rank %d\n", rank,stat.MPI_SOURCE, dirStr ,nextNode);
-					MPI_Send(&number, 1, MPI_INT, 0, stat.MPI_TAG, MPI_COMM_WORLD);
+					MPI_Send(&direction, 1, MPI_INT, 0, stat.MPI_TAG, MPI_COMM_WORLD);
 					
 				}
 				else{
 					nextNode = rank +1;
 					printf("%d: Recvd msg from %d; sending %s to Rank %d\n", rank,stat.MPI_SOURCE, dirStr ,nextNode);
-					MPI_Send(&number, 1, MPI_INT, rank +1, stat.MPI_TAG, MPI_COMM_WORLD);
+					MPI_Send(&direction, 1, MPI_INT, rank +1, stat.MPI_TAG, MPI_COMM_WORLD);
 				}
-				char dirStr[] = "Clockwise";
 				
 			}
 			else{
+				char dirStr[] = "CounterClockwise";
 				if(rank == 0){
 					nextNode = numprocs-1;
 					printf("%d: Recvd msg from %d; sending %s to Rank %d\n", rank,stat.MPI_SOURCE,dirStr, nextNode);
-					MPI_Send(&number, 1, MPI_INT, numprocs-1, stat.MPI_TAG, MPI_COMM_WORLD);
+					MPI_Send(&direction, 1, MPI_INT, numprocs-1, stat.MPI_TAG, MPI_COMM_WORLD);
 				}
 				else{
 					nextNode = rank -1;
 					printf("%d: Recvd msg from %d; sending %s to Rank %d\n", rank,stat.MPI_SOURCE,dirStr, nextNode);
-					MPI_Send(&number, 1, MPI_INT, rank -1,stat.MPI_TAG, MPI_COMM_WORLD);
+					MPI_Send(&direction, 1, MPI_INT, rank -1,stat.MPI_TAG, MPI_COMM_WORLD);
 				}
-				char dirStr[] = "CounterClockwise";
 				
 			}
 		}

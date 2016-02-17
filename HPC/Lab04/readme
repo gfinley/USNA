@@ -1,0 +1,9 @@
+Every thing works well except the make file
+the following commands will compile the programs, below them is an example on how to run each.
+
+mpicc ./sidePass.c -o sidePass
+mpicc ./pi.c -o pi
+
+mpirun -n 20 ./sidePass
+mpirun -n 20 ./pi 12345678
+
