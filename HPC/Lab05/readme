@@ -1,0 +1,6 @@
+Every thing works well except the make file commanding 'make' will compile to 'life' but it throws errors
+the following commands will compile the program seperate of the make file, below is a example on how to run it
+
+mpicc ./life.c -o life
+
+mpirun -n 8 ./life 51 < <yourFileName.data> 
