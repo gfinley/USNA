@@ -4,19 +4,19 @@
 #include "mpi.h"
 
 //fills a spcific x and y corredinate place on the board
-void fillBoard(int x,int y,char** board){ board[x][y] = '@'; }
+void fillBoard(int x,int y,char** board){ board[y][x] = '@'; }
 
 //prints out the board
 void printBoard(int xsize,int ysize,char** board){
 	int i,j;
 	printf("  ");
-	for(i=1;i<ysize-1;i++){
+	for(i=1;i<xsize-1;i++){
 		printf("%d",i);
 	}
 	printf("\n");
-	for(i =1; i<xsize-1;i++){ // starts at one and ends ad size-1 to not print the overflow rows 
+	for(i =1; i<ysize-1;i++){ // starts at one and ends ad size-1 to not print the overflow rows 
 		printf("%d:", i );
-		for(j =1; j<ysize-1; j++){
+		for(j =1; j<xsize-1; j++){
 			if (board[i][j] == 0){
 				printf(" ");}
 			else{
@@ -56,8 +56,8 @@ int countNighboors(int x, int y, char** board){
 }
 void resetBoard(int xsize, int ysize, char** board){
 	int i,j;
-	for(i =0; i<xsize;i++){
-		for(j =0; j<ysize; j++){
+	for(i =0; i<ysize;i++){
+		for(j =0; j<xsize; j++){
 			board[i][j] = ' ';
 		}
 	}//zeros out a board so that it is clean for the next generation to be represented
@@ -92,24 +92,19 @@ int switchBoard(int x){
 	else{return 1;}
 }
 
-void syncBoard(char** board, int xsize, int ysize){
+void syncBoardTopBottom(char** board, int xsize, int ysize){
 	int xx;
 	//printf("point 10\n");
-	for(xx = 0; xx < ysize;xx++){ //top to bottom
-		board[xsize-1][xx] = board[1][xx];
+	for(xx = 0; xx < xsize;xx++){ //top to bottom
+		board[ysize-1][xx] = board[1][xx];
 	}
 	//printf("point 6\n");
-	for(xx = 0; xx < ysize;xx++){ //bottom to top
-		board[0][xx] = board[xsize-2][xx];
+	for(xx = 0; xx < xsize;xx++){ //bottom to top
+		board[0][xx] = board[ysize-2][xx];
 	}
+
 	//printf("point 7\n");
-	for(xx = 0; xx < xsize;xx++){ //left to right
-		board[xx][ysize-1] = board[xx][1];
-	}
-	//printf("point 8\n");
-	for(xx = 0; xx < xsize;xx++){ //right to left
-		board[xx][0] = board[xx][ysize-2];
-	}
+
 	//printf("point 9\n");
 }
 //function sends each child node a e and y value that represents the size of the board they need
@@ -123,15 +118,42 @@ void sendBoardSize(int numprocs, int totalXSize, int totalYSize){
 			MPI_Send(&ysize, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
 	}
 }
+//0 = left incomming so halo goes to left of board
+//1 = right incoming so halo goes to right of board
+void readInHaloSide(char** board, char* array, int side,int  xsize, int ysize){
+	int ii;
+	for(ii = 0;ii< ysize;ii++){
+		if(side ==0){
+			board[ii][0] = array[ii];
+		}
+		else{
+			board[ii][xsize-1] = array[ii];
+		}
+	}
+}
 
 
 int main(int argc, char *argv[] ) 
 {
 	char **board[2];
+	void intiBoard(xsize,ysize){
+		int b,i;
+		for(b=0;b<=1;b++){
+			board[b] = calloc((size_t)ysize, sizeof(char *));
+			for (i=0; i < ysize; i++) {
+				board[b][i] = calloc((size_t)xsize, sizeof(char));
+			}
+			resetBoard(xsize,ysize, board[b]);
+		}
+		}
+
+	
 	int numGens = atoi(argv[1]);
 	int currboardNumber = 0;
 	int nextBoardNumber = 1;
-
+	int ysize;
+	int xsize;
+	MPI_Status stat;
 	int rank, numprocs;
 	int number,nextNode;
 	MPI_Init(&argc,&argv);
@@ -149,80 +171,95 @@ int main(int argc, char *argv[] )
 		int x = input1;
 		int y = input2;
 		sendBoardSize(numprocs,x,y);
-		int ysize = x + 2;
-		int xsize = y + 2;
+		xsize = x/numprocs + 2;
+		ysize = y + 2;
 		int testArr[2];
+		intiBoard(xsize,ysize);
+		//printf("x:%d y:%d\n",xsize,ysize);
 		int getx, gety, nodeToSendTo, spotInNewNode; //get values from input stream
-		printf("beginning seed distro\n");
+		//printf("beginning seed distro\n");
 		while(scanf("%d", &getx) == 1 && scanf("%d", &gety) == 1)
 		{
 			testArr[1] = gety;
-			nodeToSendTo = getx / (x / numprocs);
-			spotInNewNode = getx % (x / numprocs) + 1 ;
+			nodeToSendTo = (getx - 1) / (x / numprocs);
+			spotInNewNode = getx - 10 * nodeToSendTo ;
 			testArr[0] = spotInNewNode;
-			printf("X: %d Y: %d TO: %d\n", getx,gety,nodeToSendTo);
+			//printf("X: %d Y: %d TO: %d\n", getx,gety,nodeToSendTo);
 			if(nodeToSendTo != 0){
 				MPI_Send(&testArr, 2, MPI_INT,nodeToSendTo , 0, MPI_COMM_WORLD);
 			}	
 			else{
-				printf("saw one form myself, did not send to self");
+				//printf("placing life x: %d y: %d \n", getx,gety);
+				fillBoard(getx,gety,board[0]);
+				//printf("saw one form myself, did not send to self\n");
 			}
 		}	
 		for(i = 1; i< numprocs; i++){
 			MPI_Send(&xsize, 1, MPI_INT, i, 1, MPI_COMM_WORLD);
 		}
+		MPI_Barrier(MPI_COMM_WORLD);
+		//printf("The y size here is %d\n", ysize);
+		printBoard(xsize,ysize,board[0]);
+
 	}
 	else{
-		int ysize;
-		int xsize;
-		MPI_Status stat;
+		
 		int pointsToRecieve[2];
 		MPI_Recv(&xsize, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 		MPI_Recv(&ysize, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-		printf("NODE: %d X: %d  Y: %d\n", rank,xsize,ysize);
-		xsize = xsize + 2; // add padding to each side
-		ysize = ysize + 2; // add padding to each side
+		xsize = xsize + 2; // for padding
+		ysize = ysize + 2; // for padding
+		intiBoard(xsize,ysize);
 		MPI_Recv(&pointsToRecieve, 2, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
 		while(stat.MPI_TAG != 1){
-			printf("NODE: %d  Point Recived X: %d  Y: %d\n", rank, pointsToRecieve[0],pointsToRecieve[1]);
+			//printf("NODE: %d  Point Recived X: %d  Y: %d\n", rank, pointsToRecieve[0],pointsToRecieve[1]);
+			fillBoard(pointsToRecieve[0],pointsToRecieve[1],board[0]);
 			MPI_Recv(&pointsToRecieve, 2, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+			
 		}
-		printf("Recieved end of disrto signal\n");
+		//printf("Node: %d Recieved end of disrto signal\n",rank);
+		MPI_Barrier(MPI_COMM_WORLD);
 	}
-
-	int i , j , k , z, tempNum;
-	//sizes need to be two larger to make the correct buffer
-
 	
-/*
-	void intiBoard(xsize,ysize){
-		int b,i;
-		for(b=0;b<=1;b++){
-			board[b] = calloc((size_t)xsize, sizeof(char *));
-			for (i=0; i < xsize; i++) {
-				board[b][i] = calloc((size_t)ysize, sizeof(char));
+	//at this point all of the boards should be set up with life in them time to sync the edges
+	//lets create a test halo exchange
+
+	//a loop will go around this for every generation
+
+
+		//start the halo exchange
+		//get the part of the board we are planing on exchanging
+		//start with switching the top anb bottoms because that doesn't require comms between nodes
+		if(rank ==0){
+			syncBoardTopBottom(board[0],xsize, ysize);
+			int yy; //loop controller
+			char leftArray[ysize];
+			for(yy = 0; yy < ysize;yy++){ //left to right
+				leftArray[yy] = board[currboardNumber][yy][1];
+				printf("%c",board[currboardNumber][yy][1]);
 			}
+			MPI_Send(&leftArray, ysize, MPI_CHAR, numprocs-1, 1, MPI_COMM_WORLD);
 		}
-	}
-	//MPI_Send(&count, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-	//MPI_Recv(&number, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		else{
+			char leftArrayRecive[ysize];
+			MPI_Recv(&leftArrayRecive, sizeof(leftArrayRecive), MPI_CHAR, MPI_ANY_SOURCE , MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+			printf("Node: %d, Recived From %d \n", rank, stat.MPI_SOURCE );
+			readInHaloSide(board[currboardNumber], leftArrayRecive,1,xsize,ysize);
+			int ii;
+			for( ii = 0; ii< ysize; ii++){
+				printf("%c", leftArrayRecive[ii]);
+			}
+			//MPI_Recv(&leftArrayRecive, ysize, MPI_CHAR, MPI_ANY_SOURCE , MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+		
 
-	//make a function for rank zero to send to every rank the x and y of the bpoard they will generate without buffer space
-
-
-
-
-
-
-	//create the board with buffer space
-	intiBoard(xsize,ysize);
-
-
-	//reads things in from the input file
-	while(scanf("%d", &input1) == 1 && scanf("%d", &input2) == 1)
-	{
-		fillBoard(input2,input1,board[0]);
-	}
+		currboardNumber = switchBoard(currboardNumber);
+		nextBoardNumber = switchBoard(nextBoardNumber);
+		resetBoard(xsize,ysize,board[nextBoardNumber]);
+		printf("thats it\n");
+		
+/*
 	//printf("point 2\n");
 	syncBoard(board[0],xsize, ysize);
 	//printf("point 4\n");
