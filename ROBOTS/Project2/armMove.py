@@ -86,19 +86,59 @@ p2 =[
 	[ -np.sin(beta), np.cos(beta)*np.sin(phi), np.cos(beta)*np.cos(phi),position[2][3]],
 	[0,0,0,1]
 	]
-angleGuess3 = np.arccos(p2[2][2])
-print("Angle 3 Guess  " + str(angleGuess3))
-print("Angle 3 Actual " + str(angles2[2]))
-
-angleGuess5 = np.arccos(p2[2][0]/np.sin(angleGuess3))
-print("Angle 5 Guess  " + str(angleGuess5))
-print("Angle 5 Actual " + str(angles2[4]))
-
-angleGuess1 = -np.arccos(p2[0][2]/np.sin(angleGuess3))
-print("Angle 1 Guess  " + str(angleGuess1))
-print("Angle 1 Actual " + str(angles2[0]))
 
 
+angle3cos = position[2][2]
+angle3sin = (position[2][3]- 7.5*angle3cos)/4.0
+angleGuess3 = np.arctan2(angle3sin,angle3cos)
+
+if angle3sin == 0:
+	print("zero was seen")
+	angleGuess3 = 0
+	print("Angle 3 Guess  " + str(angleGuess3))
+	print("Angle 3 Actual " + str(angles2[2]))
+
+	angle1cos = position[0][3]/19
+	angle1sin = position[1][3]/19
+	angleGuess1 = np.arctan2(angle1sin,angle1cos)
+
+	print("Angle 1 Guess  " + str(angleGuess1))
+	print("Angle 1 Actual " + str(angles2[0]))
+
+	angle5cos = np.cos((np.arccos(position[0][0])-angleGuess1))
+	angle5sin = np.sin(-(np.arcsin(position[0][1])-angleGuess1))
+	angleGuess5 = np.arctan2(angle5sin,angle5cos)
 
 
-print(p2)
+	print("Angle 5 Guess  " + str(angleGuess5))
+	print("Angle 5 Actual " + str(angles2[4]))
+
+
+
+else:
+	print("Angle 3 Guess  " + str(angleGuess3))
+	print("Angle 3 Actual " + str(angles2[2]))
+
+
+	angle1cos = -position[0][2]/angle3sin
+	angle1sin = -position[1][2]/angle3sin 
+	angleGuess1 = np.arctan2(angle1sin,angle1cos)
+
+
+	print("Angle 1 Guess  " + str(angleGuess1))
+	print("Angle 1 Actual " + str(angles2[0]))
+
+
+	angle5cos = position[2][0]/angle3sin
+	angle5sin = -position[2][1]/angle3sin
+	angleGuess5 = np.arctan2(angle5sin,angle5cos)
+
+
+	print("Angle 5 Guess  " + str(angleGuess5))
+	print("Angle 5 Actual " + str(angles2[4]))
+
+
+
+
+
+	print(p2)
