@@ -97,12 +97,19 @@ void haloExchangeStepOne(int rank,int** forest,int forestSize){
 		rightRow = getright(forest,forestSize);
 		MPI_Send(rightRow, forestSize, MPI_INT, rank+1, 0, MPI_COMM_WORLD);
 		printf("Node: %d sent to %d\n",rank, rank+1);
+		MPI_Recv(rightRow, forestSize, MPI_INT, rank+1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		forest = assignright(rightRow,forestSize,forest);
+		printf("Node: %d recieve and assigned\n",rank);
 	}
 	else if(rank % 2 == 0){
 		if((rank % n) != 0){
 			rightRow = getright(forest,forestSize);
 			MPI_Send(rightRow, forestSize, MPI_INT, rank+1, 0, MPI_COMM_WORLD);
 			printf("Node: %d sent to %d\n",rank, rank+1);
+			//recive data on the hand back
+			MPI_Recv(rightRow, forestSize, MPI_INT, rank+1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			forest = assignright(rightRow,forestSize,forest);
+			printf("Node: %d recieve and assigned\n",rank);
 		}
 	}
 	else{
@@ -110,10 +117,12 @@ void haloExchangeStepOne(int rank,int** forest,int forestSize){
 		MPI_Recv(rightRow, forestSize, MPI_INT, rank-1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 		forest = assignleft(rightRow,forestSize,forest);
 		printf("Node: %d Recieved and saw %d\n", rank, rightRow[0]);
+		//send data on the hand back
+		//get the data  to send
+		rightRow = getLeft(forest,forestSize);
+		MPI_Send(rightRow, forestSize, MPI_INT, rank-1, 0, MPI_COMM_WORLD);
+		printf("Node: %d sent to %d\n",rank, rank-1);
 	}
-	return;
-
-
 }
 
 
