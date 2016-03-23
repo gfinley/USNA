@@ -40,13 +40,76 @@ int** initForestSection(int forestSize, int** forest){
 		return forest;
 }
 void fillforest(int rank, int** forest, int forestSize){
-	int ii,jj;
-	for(ii =1; ii<forestSize-1;ii++){
-		for(jj=1; jj< forestSize-1; jj++){
-			forest[ii][jj] = rank;
+	int ii,jj,value;
+	double density = 0;
+	for(ii =1; ii<forestSize-2;ii++){
+		for(jj=1; jj< forestSize-2; jj++){
+			 	if(haveTree()){
+			 		forest[ii][jj] = treeAge();
+			 		density = density + 1;
+			 	}
+			 	else{
+					forest[ii][jj] = 0;
+				}
+				if(treeOnFire()){
+					forest[ii][jj] = forest[ii][jj] * -1;
+					printf("fire started \n");
+			}
 		}
 	}
+	//printf("Node %d: Density: %lG\n", rank , density/(forestSize*forestSize));
 }
+void zeroForest(int rank, int** forest, int forestSize){
+	int ii,jj,value;
+	double density = 0;
+	for(ii =1; ii<forestSize-2;ii++){
+		for(jj=1; jj< forestSize-2; jj++){
+			 		forest[ii][jj] = 7;
+			}
+		}
+	}
+double getDensity(int rank, int** forest, int forestSize){
+	int ii,jj,value;
+	double treeCount = 0;
+	for(ii =1; ii<forestSize-2;ii++){
+		for(jj=1; jj< forestSize-2; jj++){
+				//printf("%d",forest[ii][jj]);
+				if(forest[ii][jj] > 0){
+			 		treeCount++;
+				}
+			}
+		}
+	return treeCount;
+}
+double countFire(int rank, int** forest, int forestSize){
+	int ii,jj,value;
+	double treeCount = 0;
+	for(ii =1; ii<forestSize-2;ii++){
+		for(jj=1; jj< forestSize-2; jj++){
+				//printf("%d",forest[ii][jj]);
+				if(forest[ii][jj] < 0){
+			 		treeCount++;
+			 		//printf("%d",forest[ii][jj]);
+				}
+			}
+		}
+	return treeCount;
+}
+void printNode(int rank, int** forest, int forestSize){
+	int ii,jj,value;
+	double treeCount = 0;
+	printf("---------------------RANK %d----------------------------------\n",rank);
+	for(ii =1; ii<forestSize-2;ii++){
+		for(jj=1; jj< forestSize-2; jj++){
+				//printf("%d",forest[ii][jj]);
+			 		printf("%d",forest[ii][jj]);
+				
+				
+			}
+			printf("\n");
+		}
+}
+
 int* getTop(int** forest,int forestSize){
 	int ii =0;
 	int* topRow = calloc((size_t)forestSize, sizeof(int));
@@ -139,7 +202,7 @@ int passDown(int rank, int n,int  worldsize){
 		return 1;
 	}
 }
-void haloExchangeStepOne(int rank,int** forest,int forestSize,int n){
+int** haloExchangeStepOne(int rank,int** forest,int forestSize,int n){
 	//stage one of Halo exchnage
 	//get left columb of 
 	MPI_Status stat;
@@ -161,8 +224,9 @@ void haloExchangeStepOne(int rank,int** forest,int forestSize,int n){
 		MPI_Send(tempRow, forestSize, MPI_INT, rank-1, 0, MPI_COMM_WORLD);
 
 	}
+	return forest;
 }
-void haloExchangeStepTwo(int rank,int** forest,int forestSize,int n){
+int** haloExchangeStepTwo(int rank,int** forest,int forestSize,int n){
 	//stage one of Halo exchnage
 	//get left columb of 
 	MPI_Status stat;
@@ -184,8 +248,9 @@ void haloExchangeStepTwo(int rank,int** forest,int forestSize,int n){
 		MPI_Recv(tempRow, forestSize, MPI_INT, rank+1, MPI_ANY_TAG, MPI_COMM_WORLD, &stat);
 		forest = assignRight(tempRow,forestSize,forest);
 	}
+	return forest;
 }
-void haloExchangeStepThree(int rank,int** forest,int forestSize,int n){
+int** haloExchangeStepThree(int rank,int** forest,int forestSize,int n){
 	//stage one of Halo exchnage
 	//get left columb of 
 	MPI_Status stat;
@@ -198,8 +263,6 @@ void haloExchangeStepThree(int rank,int** forest,int forestSize,int n){
 		tempRow = getTop(forest,forestSize);
 		MPI_Send(tempRow, forestSize, MPI_INT, rank-n, 0, MPI_COMM_WORLD);
 		//printf("Node %d finished\n",rank);
-
-
 	}
 	if(((rank/n)&1) ==0 && (rank+n < n*n)){
 		//printf("node %d ready to send \n",rank);
@@ -209,8 +272,9 @@ void haloExchangeStepThree(int rank,int** forest,int forestSize,int n){
 		forest = assignBottom(tempRow,forestSize,forest);
 		//printf("node %d finished \n",rank);
 	}
+	return forest;
 }
-void haloExchangeStepFour(int rank,int** forest,int forestSize,int n){
+int** haloExchangeStepFour(int rank,int** forest,int forestSize,int n){
 	//stage one of Halo exchnage
 	//get left columb of 
 	MPI_Status stat;
@@ -230,17 +294,125 @@ void haloExchangeStepFour(int rank,int** forest,int forestSize,int n){
 		tempRow = getTop(forest,forestSize);
 		MPI_Send(tempRow, forestSize, MPI_INT, rank-n, 0, MPI_COMM_WORLD);
 	}
+	return forest;
 }
+
+int haveTree(){
+	if( rand() % 100 < 80){
+		return 1;
+	}
+	else{
+		return 0;
+	}
+}
+int treeAge(){
+	int age = rand() % 5;
+	age++;
+	if( age > 3){
+		return 3;
+	}
+	else{
+		return age;
+	}
+}
+int treeOnFire(){
+	int temp = lrand48() % 1000000 ;
+	//printf("%d\n",temp);
+	if ( temp ==1){
+		return 1;
+	}
+	else{ 
+		return 0;
+	}
+}
+int** haloExchange(int rank, int** forest, int forestSize,int n){
+	haloExchangeStepOne(rank,forest,forestSize,n);
+	haloExchangeStepTwo(rank,forest,forestSize,n);
+	haloExchangeStepThree(rank,forest,forestSize,n);
+	haloExchangeStepFour(rank,forest,forestSize,n);
+	return forest;
+
+}
+double stepForward(int rank,int** oldForest, int** newForest, int forestSize, int xwind, int ywind){
+	int ii,jj,value;
+	double density = 0;
+	int change = 0;
+	double treeCount = 0;
+	for(ii =0; ii<forestSize-1;ii++){
+		for(jj=0; jj< forestSize-1; jj++){
+			if(oldForest[ii][jj] < 0 && ii > 1 && ii < forestSize-2 && jj >1 && jj < forestSize-2 ){ //forest is on fire at this cell
+				newForest[ii][jj] = oldForest[ii][jj] + 1; //move closer to zero on that cell untill zero is reached
+				change = change + 1;
+				
+			}
+			else{ //new "forest" gets the value of the old cell, either a zero of a positive value
+				if(newForest[ii][jj] == 7){
+					newForest[ii][jj] = oldForest[ii][jj];
+				}
+			}
+			if(oldForest[ii][jj] > 0){
+				treeCount++;
+			}
+			//cover the fire spreading case, redundent to if case above but easier to think about this way
+			if(oldForest[ii][jj] < 0){
+				int northChance = rand() % 100;
+				int southChance = rand() % 100;
+				int  eastChance = rand() % 100;
+				int  westChance = rand() % 100;
+				if(northChance < (33+ywind) && ii > 0 ){
+					if(oldForest[ii-1][jj] > 0){
+						newForest[ii-1][jj] = oldForest[ii-1][jj] *-1;
+						change = change + 1;
+					}
+				}
+				if(eastChance <( 33+ xwind) && jj < (forestSize-1)){
+					if(oldForest[ii][jj+1] > 0){
+						newForest[ii][jj+1] = oldForest[ii][jj+1] *-1;
+						change = change + 1;
+					}
+				}
+				if(westChance < (33-xwind) && jj > 0){
+					if(oldForest[ii][jj-1] > 0){
+						newForest[ii][jj-1] = oldForest[ii][jj-1] *-1;
+						change = change + 1;
+					}
+
+				}
+				if(southChance <(33-ywind) && ii < (forestSize-1)){
+					if(oldForest[ii+1][jj] > 0){
+						newForest[ii+1][jj] = oldForest[ii+1][jj] *-1;
+						change = change + 1;
+					}
+				}
+			}
+		}
+	}
+	//printf("Node %d: Density: %lG\n", rank , treeCount/(forestSize*forestSize));
+
+	return change;
+}
+int changeForest(int swi){
+	if( swi ==0){
+		return 1;
+	}
+	else{
+		return 0;
+	}
+}
+
 int main(int argc, char *argv[] ) 
 {
 
 	//variables to be used for MPI
-	int rank, numprocs;
+	int xwind = 0;
+	int ywind = 0;
+	int rank, numprocs, swi;
+	int change;
 	MPI_Status stat;
-
+	srand48(time(NULL) + rank);
+	srand(time(NULL) + rank);
 	//variables to be used for workspace distrobution
 	int forestSize;
-	
 	//mpi set up
 	MPI_Init(&argc,&argv);
 	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
@@ -249,20 +421,53 @@ int main(int argc, char *argv[] )
 
 	//get worldsize
 	forestSize = (atoi(argv[1])/ (sqrt(numprocs)))+2;	
-	int **forest;
+	int **forest[2];
+	int **oldForest;
+	int **newForest;
+
 	int n = sqrt(numprocs);
-	forest = initForestSection( forestSize, forest);
-	fillforest(rank,forest,forestSize);
+	forest[0] = initForestSection( forestSize, forest[0]);
+	forest[1] = initForestSection( forestSize, forest[1]);
+	fillforest(rank,forest[0],forestSize);
+	zeroForest(rank,forest[1],forestSize);
+	int generations = 0;
+	double total;
+	int** tempForest;
+	oldForest = forest[0];
+	newForest = forest[1];
+	//printf("starting generations");
+	change = 1;
+	int changeTotal = 1;
+	int counter = 1;
+	while(changeTotal != 0){
+		
+		oldForest = haloExchange(rank, oldForest, forestSize,n);
+		change = stepForward(rank,oldForest,newForest,forestSize,xwind,ywind);
+		//printf("node %d, change: %d\n",rank,change);
+		MPI_Allreduce(&change,&changeTotal, 1,MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+		generations++;
+		tempForest = oldForest;
+		oldForest = newForest;
+		zeroForest( rank,tempForest,forestSize); 
+		newForest = tempForest;
+		counter++;
 
-	haloExchangeStepOne(rank,forest,forestSize,n);
-	haloExchangeStepTwo(rank,forest,forestSize,n);
-	haloExchangeStepThree(rank,forest,forestSize,n);
-	haloExchangeStepFour(rank,forest,forestSize,n);
+		double treeCount = getDensity(rank, oldForest, forestSize);
+		MPI_Allreduce(&treeCount,&total, 1,MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-	int sum = verificationSum(forest,forestSize,rank);
-	MPI_Allreduce(&sum,&sum, 1,MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		if(counter % 10 == 0 && change > 0){
+			printf("Node: %d  Gen: %d Density: %lG, change %d\n",rank, counter, treeCount/(forestSize*forestSize), change);
+			//printNode(rank,oldForest,forestSize);
+		}
+	}
+	//printf("finsihed generation");
+	double treeCount = getDensity(rank, oldForest, forestSize);
+	MPI_Allreduce(&treeCount,&total, 1,MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	//printf("%lG\n", total);
 	if(rank ==0){
-	printf("Node %d  Sum:%d\n",rank,sum);
-}
+			printf("Density: %lG\n", total/(forestSize*n*forestSize*n));
+	}
+
+
 	MPI_Finalize();
 }
