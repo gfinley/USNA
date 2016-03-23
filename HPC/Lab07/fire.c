@@ -337,7 +337,7 @@ double stepForward(int rank,int** oldForest, int** newForest, int forestSize, in
 	double treeCount = 0;
 	for(ii =0; ii<forestSize-1;ii++){
 		for(jj=0; jj< forestSize-1; jj++){
-			if(oldForest[ii][jj] < 0 && ii > 1 && ii < forestSize-2 && jj > 1 && jj < forestSize-2 ){ //forest is on fire at this cell
+			if(oldForest[ii][jj] < 0 && ii > 1 && ii < forestSize-1 && jj > 1 && jj < forestSize-1 ){ //forest is on fire at this cell
 				newForest[ii][jj] = oldForest[ii][jj] + 1; //move closer to zero on that cell untill zero is reached
 				change = change + 1;
 				
@@ -444,7 +444,7 @@ int main(int argc, char *argv[] )
 		generations++;
 		tempForest = oldForest;
 		oldForest = newForest;
-		//zeroForest( rank,tempForest,forestSize); 
+		zeroForest( rank,tempForest,forestSize); 
 		newForest = tempForest;
 		counter++;
 
