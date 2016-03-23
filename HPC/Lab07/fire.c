@@ -444,7 +444,7 @@ int main(int argc, char *argv[] )
 		generations++;
 		tempForest = oldForest;
 		oldForest = newForest;
-		zeroForest( rank,tempForest,forestSize); 
+		//zeroForest( rank,tempForest,forestSize); 
 		newForest = tempForest;
 		counter++;
 
