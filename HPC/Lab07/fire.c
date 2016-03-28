@@ -351,7 +351,6 @@ double stepForwardTwo(int rank,int** oldForest, int** newForest, int forestSize,
 			}
 			if(oldForest[ii][jj]  == 0){
 				newForest[ii][jj] = oldForest[ii][jj];
-				pass;
 			}
 			if(oldForest[ii-1][jj] < 0 && oldForest[ii][jj] > 0 ){
 				int temp = rand() % 100;
@@ -465,6 +464,7 @@ int main(int argc, char *argv[] )
 	//variables to be used for MPI
 	int xwind =  atoi(argv[3]);
 	int ywind =  atoi(argv[4]);
+	int density = atoi(argv[5]);
 	int rank, numprocs, swi;
 	int change;
 	MPI_Status stat;
