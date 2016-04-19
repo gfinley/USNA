@@ -349,6 +349,9 @@ double stepForwardTwo(int rank,int** oldForest, int** newForest, int forestSize,
 				newForest[ii][jj] = oldForest[ii][jj] + 1;
 				change = change + 1;
 			}
+			if(oldForest[ii][jj]  == 0){
+				newForest[ii][jj] = oldForest[ii][jj];
+			}
 			if(oldForest[ii-1][jj] < 0 && oldForest[ii][jj] > 0 ){
 				int temp = rand() % 100;
 				if(temp < (fireSpreadRate + ywind )){
@@ -461,6 +464,7 @@ int main(int argc, char *argv[] )
 	//variables to be used for MPI
 	int xwind =  atoi(argv[3]);
 	int ywind =  atoi(argv[4]);
+	int density = atoi(argv[5]);
 	int rank, numprocs, swi;
 	int change;
 	MPI_Status stat;
@@ -485,7 +489,7 @@ int main(int argc, char *argv[] )
 	forest[0] = initForestSection( forestSize, forest[0]);
 	forest[1] = initForestSection( forestSize, forest[1]);
 	fillforest(rank,forest[0],forestSize);
-	zeroForest(rank,forest[1],forestSize);
+	//zeroForest(rank,forest[1],forestSize);
 	int generations = 0;
 	double total;
 	int** tempForest;
@@ -507,25 +511,33 @@ int main(int argc, char *argv[] )
 		generations++;
 		tempForest = oldForest;
 		oldForest = newForest;
-		zeroForest( rank,tempForest,forestSize); 
+		//zeroForest( rank,tempForest,forestSize); 
 		newForest = tempForest;
 		counter++;
 
 		double treeCount = getDensity(rank, oldForest, forestSize);
 		MPI_Allreduce(&treeCount,&total, 1,MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+<<<<<<< HEAD
 
+=======
+		/*
+>>>>>>> a605995eb237ffd165ef5e800802c1ce04f900d2
 		if(counter % 10 == 0 && change > 0){
 			//printf("Node: %d  Gen: %d Density: %lG, change %d\n",rank, counter, treeCount/(forestSize*forestSize), change);
 			//printNode(rank,oldForest,forestSize);
 			printf("Density: %lG\n", total/(forestSize*n*forestSize*n));
 		}
+		*/
+		if(rank == 0 && counter % 25 == 0){
+			printf("Density: %lG Generations: %d\n", total/(forestSize*n*forestSize*n),counter);
+	}
 	}
 	//printf("finsihed generation");
 	double treeCount = getDensity(rank, oldForest, forestSize);
 	MPI_Allreduce(&treeCount,&total, 1,MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 	//printf("%lG\n", total);
-	if(rank ==0){
-			printf("Density: %lG\n", total/(forestSize*n*forestSize*n));
+	if(rank == 0){
+			printf("Density: %lG Generations: %d\n", total/(forestSize*n*forestSize*n),counter);
 	}
 	
 
