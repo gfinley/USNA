@@ -32,6 +32,8 @@ def getColorInRoom():
     #probably utilize opencv
     print("hello")
     
+def pickNextRoom():
+    
     
 #the program will know the size of the room so we can build a internal model of the maze.
 #each maze room will have a struct
