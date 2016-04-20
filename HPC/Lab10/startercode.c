@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-
+#include <omp.h>
 #define max(a,b) ((a) >= (b) ? (a) : (b))
 
 /*
@@ -51,44 +51,86 @@ main(int argc, char **argv)
 	n=atoi(argv[1]);
 	m=atoi(argv[2]);
     }
-
-    // allocate memory for the lattice to hold the current values
-    A = (double **) calloc(n, sizeof (double *));
-    for (j=0; j < n; j++) {
-	A[j] = (double *) calloc(m, sizeof(double));
-    }
-
-    // allocate memory for the lattice to hold the new values
-    Anew = (double **) calloc(n, sizeof (double *));
-    for (j=0; j < n; j++) {
-	Anew[j] = (double *) calloc(m, sizeof(double));
-    }
-
-    /*
-     * initialize it to something
-     */
-    for(j=1; j < n-1; j++) {
-	for(i=1; i< m-1; i++) {
-	    A[j][i] = 20;
-	}
-    }
-
+    printf("here1\n");
+    //initialize parallel threads
+    //pragma omp parallel
+    //{
+        // allocate memory for the lattice to hold the current values
+        A = (double **) calloc(n, sizeof (double *));
+        //pragma omp for
+        for (j=0; j < n; j++) {
+        A[j] = (double *) calloc(m, sizeof(double));
+        }
+        printf("here2\n");
+        // allocate memory for the lattice to hold the new values
+        Anew = (double **) calloc(n, sizeof (double *));
+        //pragma omp for
+        for (j=0; j < n; j++) {
+        Anew[j] = (double *) calloc(m, sizeof(double));
+        }
+        printf("here3\n");
+        /*
+        * initialize it to something
+        */
+        //pragma omp for private(i)
+        for(j=1; j < n-1; j++) {
+            for(i=1; i< m-1; i++) {
+            //printf("j:%d i:%d\n",j,i);
+            A[j][i] = 20;
+            }
+        }
+        printf("here4\n");
+       // pragma omp for
+        for(i=0;i<m;i++){
+            A[0][i] = 20;
+            A[m-1][i] = 20;
+            Anew[0][i] = 20;
+            Anew[m-1][i] = 20;
+        }
+        printf("here5\n");
+        //pragma omp for
+        for(i=1;i<n-1;i++){
+            A[i][0] = 90;
+            A[i][n-1] = 90;
+            Anew[i][0] = 90;
+            Anew[i][n-1] = 90;
+        }
+        //pragma omp for private(j,i)
+        for(i=0;i<10;i++){
+            for(j=0;j<10;j++){
+                A[n/3+i][m/3+j] = 10;
+                A[2*n/3+i][m/3+j] = 10;
+                A[n/3+i][2*m/3+j] = 10;
+                A[2*n/3+i][2*m/3+j] = 10;
+            }
+        }
+    //}
     /*
      * jacobi iteration - until we're within tolerance
      */
+    int diff = err;
     while ( err > tol && iter < iter_max) {
-	err = 0.0;
-
+        
+    int localError= 0;
+    #pragma omp parallel for private(i,localError)
 	for (j=1; j < n-1; j++) {
 	    for(i=1; i< m-1; i++) {
 
 		Anew[j][i] = 0.25 * (A[j][i+1] + A[j][i-1] +
 				     A[j-1][i] + A[j+1][i]);
 	      
-		err = max(localerr, fabs(Anew[j][i] - A[j][i]));
-
+		err = max(localError, fabs(Anew[j][i] - A[j][i]));
+        # pragma omp critical
+        {
+            if ( diff < localError ){
+                diff = localError;
+            }
+        }
+ 
 	    } // next i
 	} // next j
+
+    
 
 
 	/* copy new map to old */
@@ -98,6 +140,15 @@ main(int argc, char **argv)
 	    }
 	}
 
+    //copy the cooling blocks in to prevent them from changing
+    for(i=0;i<10;i++){
+        for(j=0;j<10;j++){
+            A[n/3+i][m/3+j] = 10;
+            A[2*n/3+i][m/3+j] = 10;
+            A[n/3+i][2*m/3+j] = 10;
+            A[2*n/3+i][2*m/3+j] = 10;
+        }
+    }
       iter++;
       // DEBUG
       // if (iter%100==0) {printf("%d %f\n", iter, err);
@@ -115,6 +166,6 @@ main(int argc, char **argv)
     /*
      * display final results
      */
-    printMap(Anew, n, m);
-
+    //printMap(Anew, n, m);
+    
 } // main
