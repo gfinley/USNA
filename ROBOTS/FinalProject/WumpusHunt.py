@@ -12,6 +12,8 @@ from sensor_msgs.msg import Image
 
 global currImage
 
+#test for a commit
+
 class Follower:
     
     def __init__(self):
