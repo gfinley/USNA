@@ -517,7 +517,11 @@ int main(int argc, char *argv[] )
 
 		double treeCount = getDensity(rank, oldForest, forestSize);
 		MPI_Allreduce(&treeCount,&total, 1,MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+<<<<<<< HEAD
+
+=======
 		/*
+>>>>>>> a605995eb237ffd165ef5e800802c1ce04f900d2
 		if(counter % 10 == 0 && change > 0){
 			//printf("Node: %d  Gen: %d Density: %lG, change %d\n",rank, counter, treeCount/(forestSize*forestSize), change);
 			//printNode(rank,oldForest,forestSize);

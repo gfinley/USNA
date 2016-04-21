@@ -99,22 +99,11 @@ while(True):
  			print("The Robot is at " + str(x_robot) + " , " + str(y_robot) + "\n\n")
     if abs(x_robot - x_end) < 50 and abs(y_robot - y_end) < 50:
  		print("Robot has reached the end")
-    #try:
-    	#for xx in range(0,len(keypoints)):
-    		#x=keypoints[xx].pt[0]
-    		#y=keypoints[xx].pt[1]
-    		#px = gray[x,y]
-    		#print("x: " + str(keypoints[xx].pt[0]) + "y: " + str(keypoints[xx].pt[1]) + "C: " + str(px))
-    	#print("\n")
-    #except (IndexError):
-	#	pass
-
-	# Draw detected blobs as red circles.
 	#im_with_keypoints = cv2.drawKeypoints(im, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     # Display the resulting frame
     im_with_keypoints = cv2.drawKeypoints(frame, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     
-    cv2.imshow('keys',frame)
+    cv2.imshow('keys',im_with_keypoints)
     #cv2.imshow('frame',im_with_keypoints)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
