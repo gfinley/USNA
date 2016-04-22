@@ -108,54 +108,59 @@ main(int argc, char **argv)
     /*
      * jacobi iteration - until we're within tolerance
      */
-    int diff = err;
-    while ( err > tol && iter < iter_max) {
-        
-    int localError= 0;
-    #pragma omp parallel for private(i,localError)
-	for (j=1; j < n-1; j++) {
-	    for(i=1; i< m-1; i++) {
+    int localError= err;
 
-		Anew[j][i] = 0.25 * (A[j][i+1] + A[j][i-1] +
-				     A[j-1][i] + A[j+1][i]);
-	      
-		err = max(localError, fabs(Anew[j][i] - A[j][i]));
-        # pragma omp critical
+    #pragma omp parallel firstprivate(localError,i,j)
+    {    
+        while ( err > tol && iter < iter_max) {
+        #pragma omp barrier   
+   
+        err = 0;
+        localError = 0;    
+        #pragma omp for
+        for (j=1; j < n-1; j++) {
+            for(i=1; i< m-1; i++) {
+
+            Anew[j][i] = 0.25 * (A[j][i+1] + A[j][i-1] +
+                        A[j-1][i] + A[j+1][i]);
+            
+            err = max(localError, fabs(Anew[j][i] - A[j][i]));
+            } // next i
+        } // next j 
+        #pragma omp critical
         {
-            if ( diff < localError ){
-                diff = localError;
+            if ( err < localError ){
+                err = localError;
             }
         }
- 
-	    } // next i
-	} // next j
+        //pragma omp barrier
+        //printf("here %d difference: %f\n", iter, err);
+        //pragma omp barrier
 
-    
-
-
-	/* copy new map to old */
-	for(j=1; j < n-1; j++) {
-	    for(i=1; i< m-1; i++) {
-		A[j][i] = Anew[j][i];
-	    }
-	}
-
-    //copy the cooling blocks in to prevent them from changing
-    for(i=0;i<10;i++){
-        for(j=0;j<10;j++){
-            A[n/3+i][m/3+j] = 10;
-            A[2*n/3+i][m/3+j] = 10;
-            A[n/3+i][2*m/3+j] = 10;
-            A[2*n/3+i][2*m/3+j] = 10;
+        /* copy new map to old */
+        for(j=1; j < n-1; j++) {
+            for(i=1; i< m-1; i++) {
+            A[j][i] = Anew[j][i];
+            }
         }
+
+        //copy the cooling blocks in to prevent them from changing
+        for(i=0;i<10;i++){
+            for(j=0;j<10;j++){
+                A[n/3+i][m/3+j] = 10;
+                A[2*n/3+i][m/3+j] = 10;
+                A[n/3+i][2*m/3+j] = 10;
+                A[2*n/3+i][2*m/3+j] = 10;
+            }
+        }
+        iter++;
+ 
+        // DEBUG
+        // if (iter%100==0) {printf("%d %f\n", iter, err);
+        //                   printMap(Anew, n, m);}
+        
+        } // endwhile
     }
-      iter++;
-      // DEBUG
-      // if (iter%100==0) {printf("%d %f\n", iter, err);
-      //                   printMap(Anew, n, m);}
-
-    } // endwhile
-
     /*
      * Write this to stderr to avoid mixing in with the values;
      * it can serve as a "checksum" to see if a new version still
